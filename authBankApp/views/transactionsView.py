@@ -4,6 +4,7 @@ from rest_framework.response                        import Response
 from rest_framework.permissions                     import IsAuthenticated
 from rest_framework_simplejwt.backends              import TokenBackend
 
+from authBankApp.models.account                     import Account
 from authBankApp.models.transaction                 import Transaction
 from authBankApp.serializers.transactionSerializer  import TransactionSerializer
 
@@ -66,9 +67,21 @@ class TransactionCreateView(generics.CreateAPIView):
             stringResponse = {'detail':'Unauthorized Request'}
             return Response(stringResponse, status=status.HTTP_401_UNAUTHORIZED)
 
+        account_origin = Account.objects.get(id=request.data['transaction_data']['account_origin'])
+        if account_origin.balance < request.data['transaction_data']['amount']:
+            stringResponse = {'detail':'saldo insuficiente'}
+            return Response(stringResponse, status=status.HTTP_406_NOT_ACCEPTABLE)
+
         serializer = TransactionSerializer(data=request.data['transaction_data'])
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
+        account_origin.balance -= request.data['transaction_data']['amount']
+        account_origin.save()
+
+        account_destiny = Account.objects.get(id=request.data['transaction_data']['account_destiny'])
+        account_destiny.balance += request.data['transaction_data']['amount']
+        account_destiny.save()
 
         return Response("Transacción exitosa", status=status.HTTP_201_CREATED)
 
