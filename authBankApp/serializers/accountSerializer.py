@@ -1,5 +1,3 @@
-from dataclasses import fields
-from statistics import mode
 from authBankApp.models.account import Account
 from rest_framework             import serializers
 
